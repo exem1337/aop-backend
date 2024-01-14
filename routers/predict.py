@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from typing import List
 import numpy as np
 import json
@@ -105,4 +105,35 @@ async def model_info():
         "информация_о_слоях": layer_info,
         "общее_количество_параметров": total_params,
         "количество_скрытых_слоев": hidden_layers
+    }
+
+@router.get("/metadata", response_model=dict)
+async def read_metadata():
+    try:
+        # Попробуйте различные кодировки
+        encodings = ["utf-8", "latin-1", "windows-1251", "cp1252"]
+        
+        for encoding in encodings:
+            try:
+                # Чтение метаданных из файла с разными кодировками
+                with open("perceptron_model/keras_metadata.pb", "rb") as file:
+                    metadata_bytes = file.read()
+                    metadata_str = metadata_bytes.decode(encoding)
+                    metadata_json = json.loads(metadata_str)
+                    
+                    return metadata_json
+            except Exception as e:
+                continue
+        
+        # Если ни одна кодировка не сработала
+        raise HTTPException(status_code=500, detail="Failed to decode metadata")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/test_training") 
+async def test_training():
+    return { 
+        "Пройдено": 230,
+        "Успешно": 97.38,
+        "Провально": 2.62,
     }

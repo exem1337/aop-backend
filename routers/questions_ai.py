@@ -39,7 +39,7 @@ def generate_questions_answers(text, num_questions=5, max_tokens=100):
     outputs = model.generate(input_ids, max_new_tokens=100)
 
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return generated_text
+    return text
 
 # Ендпоинт для генерации вопросов с нужной JSON-структурой
 @router.post("/generate_questions_with_json/", tags=['questions'])
