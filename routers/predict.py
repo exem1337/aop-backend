@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+
 # Определение моделей данных с помощью Pydantic
 class InputData(BaseModel):
     computer_literacy: float
@@ -16,8 +17,10 @@ class InputData(BaseModel):
     memory: float
     attention_concentration: float
 
+
 class PredictionResult(BaseModel):
     prediction: List[float]
+
 
 # Генерация простой нейронной сети
 def create_model(input_shape, output_shape):
@@ -30,11 +33,13 @@ def create_model(input_shape, output_shape):
     model.compile(optimizer='adam', loss='mean_squared_error')
     return model
 
+
 # Загрузка данных из файла JSON
 def load_dataset(file_path):
     with open(file_path, 'r') as json_file:
         dataset = json.load(json_file)
     return dataset
+
 
 # Загрузка или обучение модели
 def load_or_train_model(dataset_file):
@@ -46,23 +51,27 @@ def load_or_train_model(dataset_file):
         dataset = load_dataset(dataset_file)
 
         # Преобразование данных в numpy массивы для обучения
-        inputs = np.array([[data["computer_literacy"], data["visual_acuity"], data["age"], data["memory"], data["attention_concentration"]] for data in dataset])
-        outputs = np.array([[data["font_size"], data["color_scheme"], 1 if data["icon_presence"] else 0] for data in dataset])
+        inputs = np.array([[data["computer_literacy"], data["visual_acuity"], data["age"], data["memory"],
+                            data["attention_concentration"]] for data in dataset])
+        outputs = np.array(
+            [[data["font_size"], data["color_scheme"], 1 if data["icon_presence"] else 0] for data in dataset])
 
         # Создание и обучение модели
         model = create_model(len(inputs[0]), len(outputs[0]))
         model.fit(inputs, outputs, epochs=100, batch_size=32, verbose=0)
-        
+
         # Сохранение обученной модели
         model.save('perceptron_model')
-    
+
     return model
+
 
 @router.post("/predict/", response_model=PredictionResult, tags=["Predictions"])
 async def predict(data: InputData):
     model = load_or_train_model('constants/dataset.json')
 
-    inputs = np.array([[data.computer_literacy, data.visual_acuity, data.age, data.memory, data.attention_concentration]])
+    inputs = np.array(
+        [[data.computer_literacy, data.visual_acuity, data.age, data.memory, data.attention_concentration]])
     prediction = model.predict(inputs)
     print(prediction)
     # Предположим, у вас есть два предсказанных значения, например, размер шрифта и цветовая схема
@@ -72,7 +81,8 @@ async def predict(data: InputData):
 
     return {"prediction": [predicted_font_size, predicted_color_scheme, predicted_icon_presence]}
 
-@router.get("/model_info/", tags=["Model"])
+
+@router.get("/model_info/", tags=["Predictions"])
 async def model_info():
     model = load_or_train_model('constants/dataset.json')
     model_summary = []
@@ -88,7 +98,8 @@ async def model_info():
 
     model.summary(print_fn=lambda x: model_summary.append(x))
 
-    translated_summary = [summary.replace("dense", "Полносвязный").replace("sequential", "Последовательный") for summary in model_summary[1:]]
+    translated_summary = [summary.replace("dense", "Полносвязный").replace("sequential", "Последовательный") for summary
+                          in model_summary[1:]]
 
     for layer in model.layers:
         layer_config = layer.get_config()
@@ -107,12 +118,13 @@ async def model_info():
         "количество_скрытых_слоев": hidden_layers
     }
 
-@router.get("/metadata", response_model=dict)
+
+@router.get("/metadata", response_model=dict, tags=["Predictions"])
 async def read_metadata():
     try:
         # Попробуйте различные кодировки
         encodings = ["utf-8", "latin-1", "windows-1251", "cp1252"]
-        
+
         for encoding in encodings:
             try:
                 # Чтение метаданных из файла с разными кодировками
@@ -120,20 +132,12 @@ async def read_metadata():
                     metadata_bytes = file.read()
                     metadata_str = metadata_bytes.decode(encoding)
                     metadata_json = json.loads(metadata_str)
-                    
+
                     return metadata_json
             except Exception as e:
                 continue
-        
+
         # Если ни одна кодировка не сработала
         raise HTTPException(status_code=500, detail="Failed to decode metadata")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/test_training") 
-async def test_training():
-    return { 
-        "Пройдено": 230,
-        "Успешно": 97.38,
-        "Провально": 2.62,
-    }
