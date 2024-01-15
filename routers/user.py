@@ -1,28 +1,23 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, and_, delete
+from fastapi.security import HTTPBearer
+from sqlalchemy import and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import AddUser
-from services.auth.database import get_user_db, UserDB, get_async_session
-import bcrypt
+from services.auth.auth_utils import hash_password
+from services.auth.database import get_user_db, UserDB
+from services.user_service import check_existence_and_get_user_by_id, check_user_not_exist_by_email
 
 router = APIRouter()
+oauth2_scheme = HTTPBearer()
 
 
 @router.post("/user_create", tags=["User"])
-async def create_user(user: AddUser, user_db: AsyncSession = Depends(get_user_db)):
-    stmt = select(UserDB).where(and_(UserDB.email == user.email))
-    existing_user = (await user_db.execute(stmt)).scalar()
-
-    if existing_user:
-        print(existing_user)
-        raise HTTPException(status_code=400, detail="Пользователь с такой электронной почтой уже существует")
+async def create_user(user: AddUser, user_db: AsyncSession = Depends(get_user_db), credentials=Depends(oauth2_scheme)):
+    await check_user_not_exist_by_email(user.email)
 
     try:
-        salt = bcrypt.gensalt()
-        password_bytes = user.password.encode('utf-8')
-
-        hashed_password = bcrypt.hashpw(password_bytes, salt)
+        hashed_password = hash_password(user.password)
 
         new_user = UserDB(
             email=user.email,
@@ -47,20 +42,15 @@ async def create_user(user: AddUser, user_db: AsyncSession = Depends(get_user_db
 
 
 @router.delete("/user_delete", tags=["User"])
-async def delete_user(user_id: int, user_db: AsyncSession = Depends(get_async_session)):
+async def delete_user(user_id: int, user_db: AsyncSession = Depends(get_user_db), credentials=Depends(oauth2_scheme)):
     try:
-        stmt = select(UserDB).where(and_(UserDB.id == user_id))
-        existing_user = (await user_db.execute(stmt)).scalar()
-
-        if not existing_user:
-            print(existing_user)
-            raise HTTPException(status_code=400, detail="Пользователь не найден")
-
+        await check_existence_and_get_user_by_id(user_id)
         stmt = delete(UserDB).where(and_(UserDB.id == user_id))
         await user_db.execute(stmt)
         await user_db.commit()
 
         return {"message": "Пользователь успешно удален"}
+
     except HTTPException as exc:
         raise exc
     except Exception as e:
@@ -68,20 +58,12 @@ async def delete_user(user_id: int, user_db: AsyncSession = Depends(get_async_se
 
 
 @router.get("/user_get", tags=["User"])
-async def get_user(user_id: int, user_db: AsyncSession = Depends(get_async_session)):
+async def get_user(user_id: int, credentials=Depends(oauth2_scheme)):
     try:
-        stmt = select(UserDB).where(and_(UserDB.id == user_id))
-        existing_user = (await user_db.execute(stmt)).scalar()
-
-        if not existing_user:
-            print(existing_user)
-            raise HTTPException(status_code=400, detail="Пользователь не найден")
-
-        del existing_user.password
-
-        return existing_user
+        return await check_existence_and_get_user_by_id(user_id)
 
     except HTTPException as exc:
         raise exc
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=500, detail=str(e))

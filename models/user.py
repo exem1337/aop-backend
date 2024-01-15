@@ -29,3 +29,6 @@ class AddUser(BaseModel):
     last_name: str
     middle_name: str
     status: str
+
+    class Config:
+        from_attributes = True

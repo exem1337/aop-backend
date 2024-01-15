@@ -1,14 +1,12 @@
 from datetime import datetime
 from typing import AsyncGenerator
 
-from fastapi import Depends
 from sqlalchemy import Column, String, Integer, TIMESTAMP
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from config import DB_HOST, DB_NAME, DB_PASS, DB_PORT, DB_USER
-from enums.role import ERole
 
 DATABASE_URL = f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 Base: DeclarativeMeta = declarative_base()
@@ -42,5 +40,5 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-async def get_user_db(session: AsyncSession = Depends(get_async_session)):
-    yield session
+async def get_user_db() -> AsyncSession:
+    return async_session_maker()
