@@ -17,7 +17,10 @@ def hash_password(password: str):
 
 
 def verify_password(password: str, hashed_password: str):
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    try:
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except JWTError as e:
+        print('error decoding password', e)
 
 
 def create_jwt_token(user_info: AddUser) -> str:

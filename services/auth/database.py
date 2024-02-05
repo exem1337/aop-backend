@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import AsyncGenerator
 
-from sqlalchemy import Column, String, Integer, TIMESTAMP
+from sqlalchemy import Column, String, Integer, TIMESTAMP, ForeignKey
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -27,7 +27,51 @@ class BaseUserTable(Base):
     created_at: str = Column(TIMESTAMP, default=datetime.utcnow)
 
 
+class BaseCourseTable(Base):
+    __tablename__ = "course"
+    __allow_unmapped__ = True
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    name: str = Column(String, nullable=False)
+    description: str = Column(String, nullable=True)
+    author_id: int = Column(Integer, ForeignKey("user.id"), nullable=False)
+    created_at: str = Column(TIMESTAMP, default=datetime.utcnow)
+    initial_test_id: str = Column(Integer, nullable=True)
+
+
+class BaseCourseAndUsersTable(Base):
+    __tablename__ = "course_and_user"
+    __allow_unmapped__ = True
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    user_id: int = Column(Integer, ForeignKey("user.id"), nullable=False)
+    course_id: int = Column(Integer, ForeignKey("course.id"), nullable=False)
+
+
+class BaseThemeTable(Base):
+    __tablename__ = "course_theme"
+    __allow_unmapped__ = True
+
+    id: int = Column(Integer, primary_key=True, autoincrement=True)
+    name: str = Column(String, nullable=False)
+    description: str = Column(String, nullable=True)
+    course_id: int = Column(Integer, ForeignKey("course.id"), nullable=False)
+    created_at: str = Column(TIMESTAMP, default=datetime.utcnow)
+
+
 class UserDB(BaseUserTable, Base):
+    pass
+
+
+class CourseDB(BaseCourseTable, Base):
+    pass
+
+
+class CourseAndUsersDB(BaseCourseAndUsersTable, Base):
+    pass
+
+
+class ThemeDB(BaseThemeTable, Base):
     pass
 
 

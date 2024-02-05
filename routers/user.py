@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.user import AddUser
 from services.auth.auth_utils import hash_password
 from services.auth.database import get_user_db, UserDB
-from services.user_service import check_existence_and_get_user_by_id, check_user_not_exist_by_email
+from services.user_service import check_existence_and_get_user_by_id, check_user_not_exist_by_email, \
+    check_available_roles
 
 router = APIRouter()
 oauth2_scheme = HTTPBearer()
@@ -15,6 +16,8 @@ oauth2_scheme = HTTPBearer()
 @router.post("/user_create", tags=["User"])
 async def create_user(user: AddUser, user_db: AsyncSession = Depends(get_user_db), credentials=Depends(oauth2_scheme)):
     await check_user_not_exist_by_email(user.email)
+
+    check_available_roles(user.role)
 
     try:
         hashed_password = hash_password(user.password)
@@ -41,7 +44,7 @@ async def create_user(user: AddUser, user_db: AsyncSession = Depends(get_user_db
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/user_delete", tags=["User"])
+@router.delete("/user_delete/{user_id}", tags=["User"])
 async def delete_user(user_id: int, user_db: AsyncSession = Depends(get_user_db), credentials=Depends(oauth2_scheme)):
     try:
         await check_existence_and_get_user_by_id(user_id)
@@ -57,7 +60,7 @@ async def delete_user(user_id: int, user_db: AsyncSession = Depends(get_user_db)
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/user_get", tags=["User"])
+@router.get("/user_get/{user_id}", tags=["User"])
 async def get_user(user_id: int, credentials=Depends(oauth2_scheme)):
     try:
         return await check_existence_and_get_user_by_id(user_id)

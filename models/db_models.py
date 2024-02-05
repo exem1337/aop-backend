@@ -48,6 +48,14 @@ course = Table(
     Column("initial_test_id", Integer, nullable=True)
 )
 
+course_and_user = Table(
+    "course_and_user",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("user_id", Integer, ForeignKey("user.id"), nullable=False),
+    Column("course_id", Integer, ForeignKey("course.id"), nullable=False)
+)
+
 course_theme = Table(
     "course_theme",
     metadata,

@@ -11,14 +11,14 @@ openai.api_key = api_key
 
 router = APIRouter()
 
-# Функция для извлечения текста из docx файлов
+
 async def extract_text_from_docx(file):
     contents = BytesIO(await file.read())
     doc = Document(contents)
     text = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
     return text
 
-# Функция для извлечения текста из pdf файлов
+
 async def extract_text_from_pdf(file):
     contents = BytesIO(await file.read())
     pdf_reader = PyPDF2.PdfReader(contents)
@@ -27,7 +27,7 @@ async def extract_text_from_pdf(file):
         text += page.extract_text()
     return text
 
-# Функция для генерации вопросов с нужной JSON-структурой
+
 def generate_questions_answers(text, num_questions=5, max_tokens=100):
     cache_path = "D:/ai-cache"
     tokenizer = T5Tokenizer.from_pretrained("google/flan-t5-base", cache_dir=cache_path)
@@ -41,7 +41,7 @@ def generate_questions_answers(text, num_questions=5, max_tokens=100):
     generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
     return text
 
-# Ендпоинт для генерации вопросов с нужной JSON-структурой
+
 @router.post("/generate_questions_with_json/", tags=['questions'])
 async def generate_questions_with_json_from_document(file: UploadFile = File(...), num_questions: int = 5):
     file_extension = file.filename.split(".")[-1]

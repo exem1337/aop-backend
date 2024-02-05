@@ -12,17 +12,19 @@ oauth2_scheme = HTTPBearer()
 
 @router.post("/login", tags=["Auth"])
 async def login(auth_info: AuthSchema):
-    user = await check_existence_and_get_user_by_email(auth_info.email, False)
+    try:
+        user = await check_existence_and_get_user_by_email(auth_info.email, False)
 
-    if not verify_password(auth_info.password, user.password):
-        raise HTTPException(status_code=403, detail="Неверный логин или пароль")
+        if not verify_password(auth_info.password, user.password):
+            raise HTTPException(status_code=403, detail="Неверный логин или пароль")
 
-    token = create_jwt_token(user)
-    return {"token": token}
+        token = create_jwt_token(user)
+        return {"token": token}
+
+    except HTTPException as e:
+        print(e)
 
 
 @router.get("/me", tags=["Auth"])
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(oauth2_scheme)):
     return await verify_jwt_token_and_get_user(credentials.credentials)
-
-
